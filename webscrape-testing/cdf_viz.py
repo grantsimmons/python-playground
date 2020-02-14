@@ -22,7 +22,7 @@ ping = data['Ping'].values
 values = data['Val'].values
 plt.plot(ping, values, label="Ping")
 plt.ylabel('CDF of ping values')
-plt.xlabel('Ping')
-plt.title('CDF of ping to settlers.org.za between 4 and 7pm')
+plt.xlabel('Ping (ms)')
+plt.title('CDF of 10755 pings to settlers.org.za between 4 and 7pm')
 plt.legend()
 plt.show()
