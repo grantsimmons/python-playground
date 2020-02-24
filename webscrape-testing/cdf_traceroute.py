@@ -1,23 +1,25 @@
+#   Author: Grant Simmons (gsimmons@stevens.edu)
+#   Instructions: Run tester.sh for a few hours before following up with this script
+#   Dependencies: inetutils-traceroute (apt), numpy, pandas, matplotlib (python3)
+
 import datetime
 from datetime import timedelta
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
-import regex
+import re
 from statistics import mean
 
 servers = {}
-raw_files = ['trace_mfa.go.th.txt', 'trace_government.kz.txt']
-date_value = regex.compile('(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})', regex.IGNORECASE)
-tr_values = regex.compile('([0-9.]+)\s\(([0-9.a-z-]+)\)', regex.IGNORECASE)
-ms_values = regex.compile('([0-9.]+)ms')
+raw_files = ['mfa.go.th/trace_mfa.go.th.txt', 'government.kz/trace_government.kz.txt']
+date_value = re.compile('(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})', re.IGNORECASE)
+tr_values = re.compile('([0-9.]+)\s\(([0-9.a-z-]+)\)', re.IGNORECASE)
+ms_values = re.compile('([0-9.]+)ms')
 
 for file_name in raw_files:
     with open(file_name, 'r') as infile:
         i = 0
-        file_len = sum(1 for line in infile)
-        infile.seek(0)
         num_hits = 0
         curr_day = 0
         curr_hour = 0
@@ -37,11 +39,11 @@ for file_name in raw_files:
                 curr_sec = date_search.group(6)
             if tr_search:
                 if (tr_search.group(1), tr_search.group(2)) not in servers:
-                    servers[(tr_search.group(1), tr_search.group(2))] = [({'year': curr_year, 'month': curr_month, 'day': curr_day, 'hour': curr_hour, 'min': curr_min}, regex.findall(ms_values, line))]
+                    servers[(tr_search.group(1), tr_search.group(2))] = [({'year': curr_year, 'month': curr_month, 'day': curr_day, 'hour': curr_hour, 'min': curr_min}, re.findall(ms_values, line))]
                 else:
-                    servers[(tr_search.group(1), tr_search.group(2))].append(({'year': curr_year, 'month': curr_month, 'day': curr_day, 'hour': curr_hour, 'min': curr_min}, regex.findall(ms_values, line)))
+                    servers[(tr_search.group(1), tr_search.group(2))].append(({'year': curr_year, 'month': curr_month, 'day': curr_day, 'hour': curr_hour, 'min': curr_min}, re.findall(ms_values, line)))
 
-        with open(str(file_name[:-3] + ".csv"), 'w') as outfile:
+        with open(str(file_name[:-4] + ".csv"), 'w') as outfile:
             outfile.write('IP,name,date,hit 1,hit 2,hit 3,avg\n')
             for server in servers:
                 print(server)
@@ -60,7 +62,7 @@ for file_name in raw_files:
 
 
     mydateparser = lambda x: pd.datetime.strptime(x, "%Y-%m-%d %H:%M")
-    data = pd.read_csv(str(file_name[:-3] + ".csv"), parse_dates=['date'], date_parser=mydateparser)
+    data = pd.read_csv(str(file_name[:-4] + ".csv"), parse_dates=['date'], date_parser=mydateparser)
     data.head()
     dataframe = pd.DataFrame(data)
     print(dataframe[dataframe.IP == '192.168.1.1'])
@@ -81,38 +83,37 @@ for file_name in raw_files:
     right = 0.90
     top = 0.88
     wspace = 0.20
-    hspace = 0.40
+    hspace = 0.60
     #Full trace
-    all_values = data[['hit 1', 'hit 2', 'hit 3']].stack().reset_index(drop=True).rename_axis(('value',))
+    all_values = data[['hit 1', 'hit 2', 'hit 3']].stack().reset_index(drop=True).to_frame()#.reset_index(inplace=True, drop=True)
     arr_len = len(all_values.index)
-    all_values_sorted = all_values.sort_values().reset_index(drop=True)
-    #all_values['cdf'] = 1/arr_len * (all_values.index + 1)
-    print(all_values)
-    nan_arr = np.isnan(all_values)
-    non_nan_arr = ~nan_arr
-    #for index, value in enumerate(all_values):
-    #    cdf = 1/arr_len * (index + 1)
-    #    all_values_cdf.append((value, cdf))
-    #print(all_values_cdf)
+    all_values_sorted = all_values.sort_values(by=[0], na_position='first').reset_index(drop=True)
+    all_values_sorted['cdf'] = 1/arr_len * (all_values.index + 1)
 
-    #plt.figure(figsize=(15,10))
-    #x = i[0] for i in all_values_cdf
-    #y = i[1] for i in all_values_cdf
-    #plt.scatter(x,y,s=4) #.plot?
-    #plt.ylabel('CDF')
-    #plt.xlabel('Delay (ms)')
-    #plt.title('CDF of {}'.format(file_name[:-3]))
+    ranges = [i for i in range(500)]
+
+    plt.figure(figsize=(15,10))
+    ax = plt.subplot(1,1,1)
+    #x = test.index
+    y = all_values_sorted[0]
+    plt.hist(y,bins=ranges,color='silver') #.plot?
+    ax.set(xlim=(-5,475))
+    plt.ylabel('Number of occurrences (log)')
+    plt.yscale('log')
+    plt.xlabel('Delay (ms)')
+    plt.title('Distribution and CDF of delays for {}'.format(file_name[:-4]))
+
+    bx = ax.twinx()
+    x = all_values_sorted[0]
+    y = all_values_sorted['cdf']
+    plt.scatter(x,y,s=4,color='navy') #.plot?
+    bx.set_ylabel('CDF')
+    bx.set_xlabel('Delay (ms)')
     #plt.show()
+    plt.savefig(str(file_name[:-4] + '_cumulative.png'), format='png')
 
-    #    if index % 50 == 0:
-    #        print('\n')
-    #    if np.isnan(value):
-    #        print("whoops")
-    #    print(value, end=' ')
-
-
-'''    
     for ip_unique in ip_list: #individual hops
+        #ip_unique = '192.168.1.1'
         ip_dataframe = data[data.IP == ip_unique]
         plt.figure(figsize=(15,10))
         plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
@@ -129,7 +130,6 @@ for file_name in raw_files:
         ax.xaxis.set_major_locator(dates.DayLocator())
         ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M\n%b\n%d'))
         plt.title('{} ({})'.format(ip_unique, ip_name_hash[ip_unique]))
-        #plt.legend()
         
         ip_dataframe_sorted = ip_dataframe.sort_values(by=['avg']).reset_index(drop=True)
         df_len = len(ip_dataframe_sorted.index)
@@ -137,13 +137,20 @@ for file_name in raw_files:
         print(ip_dataframe_sorted)
         print("Length: ", df_len)
         
-        plt.subplot(2,1,2) #CDF
+        bx = plt.subplot(2,1,2) #CDF
+        bx2 = bx.twinx()
         x = ip_dataframe_sorted['avg']
         y = ip_dataframe_sorted['cdf']
-        plt.scatter(x,y,s=4, label=ip_unique) #.plot?
-        #plt.axis([min(ip_dataframe['date']) - timedelta(hours=1), max(ip_dataframe['date']) + timedelta(hours=1), min(ip_dataframe['avg']) - 1 , max(ip_dataframe['avg']) + 1])
-        plt.ylabel('CDF')
+        bx2.scatter(x,y,s=4, label=ip_unique, color='navy') #.plot?
+        bx.set(xlim=(min(ip_dataframe_sorted['avg']) - 2, max(ip_dataframe_sorted['avg']) + 2))
+        bx2.set_ylabel('CDF', color='black')
         plt.xlabel('Delay (ms)')
-        plt.title('CDF function for {} ({})'.format(ip_unique, ip_name_hash[ip_unique]))
-        plt.show()
-'''
+        plt.title('Distribution and CDF of delays for {} ({})'.format(ip_unique, ip_name_hash[ip_unique]))
+
+        print(ip_dataframe_sorted)
+        y = ip_dataframe_sorted['avg']
+        bx.hist(y,bins=ranges, color='silver') #.plot?
+        bx.set_ylabel('Number of occurrences (log)', color='black')
+        bx.set_yscale('log')
+        plt.savefig(str(file_name[:-4] + '_{}.png'.format(ip_unique)), format='png')
+        #plt.show()
