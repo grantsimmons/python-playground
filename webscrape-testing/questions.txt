@@ -1,0 +1,69 @@
+What is the problem?
+    Why does the Internet take several minutes to recover from problems?
+        errors are hard to detect, and when they are detected, only a summary
+        of this is shared.
+    RON does it in seconds. How?
+        RONs probe paths aggressively
+    What is an application layer overlay? An overlay?
+    "Other" RON nodes? How are they better than the internet?
+        looks like "nodes" get together to route around problems
+
+    what is dampening? what are oscillations? Why do AS summarize results to
+    avoid dampening and oscillations?
+    
+    what is an overlay network?
+
+Assignment information:
+1. What is the problem these authors are trying to solve? 
+        The internet currently takes minutes or hours to recognize a broken
+        connection, RONs aim to identify them in seconds and route around
+        them.
+        enhance performance, increase fault tolerance
+
+        established connections terminate during oscillations, as no
+        acknowledgement is receive (fundamental flaw in BGP)
+
+    What is wrong with Internet routing?
+        errors are hard to detect, and when they are detected, only a summary
+        of this is shared.
+    Why does the Internet 'dampen' routing updates and reachability information?
+        if it did not, oscillations would occur, where ___
+    Why does the Internet take minutes (if not hours) to figure out something is wrong? 
+        Detailed routing information is only contained within the AS itself,
+        only summarized reports are shared over BGP, this promotes wide
+        scalability, but costs routing efficiency. Aggregates information for
+        hundreds of millions of hosts. These updates are deliberately slow in
+        an effort to damped oscillations. This results in long times for route
+        timings to converge.
+
+2. What is an overlay network?
+        A group of nodes connected on the same network, however they
+        communicate with each other by aggressively probing their links. When
+        the internet link is the best one, packets are transported over it. If
+        it is not, RON nodes will redirect to other nodes in the network
+        before BGP will recognize the fault. Limited to 50 nodes to limit
+        bandwidth overhead on network. Uses existing protocols to observe and
+        communicate information about lower layers of communication.
+    How do you put one together?
+    How do nodes learn about one another, and constantly probe to understand fluctuating Internet connectivity?
+    How does RON route packets?
+        This depends on the application, e.g. interactive applications may
+        prioritize latency, while FTP may prioritize throughput.
+    How does RON detect if a node is down? 
+        RON does not have to worry about scalability, so it uses existing
+        protocols and infrastructure to gain information about its own nodes.
+        Leaves damping to BGP
+
+3. How did the authors set-up a real-world experiment to test the efficiency of RON?
+    How does RON rack up against the Internet in terms of: 
+        (i) reducing latency, 
+            5% of transfers observed doubled TCP throughput as a result
+            reduced by 40ms in 11% of samples
+        (ii) reducing packet loss, and 
+            packet loss probability reduced by 0.05
+        (iii) fast failure detection times? 
+
+4. Finally, what are your thoughts about this work?
+    impressive that they can achieve these goals with at most one redirection
+    What are it's shortcomings?
+    How can an invention like this benefit some applications that we all use everyday? 
