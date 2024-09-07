@@ -10,12 +10,23 @@ pygame.mixer.pre_init(buffer=8192)
 pygame.mixer.init(size=32, buffer=8192, channels=1, frequency=freq * 16)
 pygame.mixer.set_num_channels(1)
 
+#How to make:
+# Open file in GIMP
+# Change Canvas and layer sizes
+# Image>Precision 8-bit
+# Image>Mode Grayscale <convert>
+# Image>Mode Indexed
+# Export as raw data
+
 img_map = []
-with open("lenna.512", "rb") as img:
-    while (byte := img.read(1)):
-        img_map.append(int.from_bytes(byte))
+with open("images/garrett.data", "rb") as img:
+    while (byte := img.read(2)):
+        img_map.append(int.from_bytes(byte) >> 8 & 0xFF)
 
 img_map_2d = np.array(img_map).reshape(512,512)
+
+plt.imshow(img_map_2d, cmap='gray')
+plt.show()
 
 conv_map = np.array([[-1, 0, 1], 
                     [-1, 0, 1], 
